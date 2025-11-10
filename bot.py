@@ -121,6 +121,12 @@ async def on_message(message):
         await bot.process_commands(message)
         return
 
+    # Process commands FIRST - don't add reactions to command messages
+    ctx = await bot.get_context(message)
+    if ctx.valid:
+        await bot.invoke(ctx)
+        return
+
     logger.info(f"New message from {message.author}: {message.content[:50]}...")
 
     # Get server config
@@ -146,8 +152,6 @@ async def on_message(message):
             await message.add_reaction(emoji)
         except Exception as e:
             logger.error(f"Failed to add reaction for {lang}: {e}")
-
-    await bot.process_commands(message)
 
 
 @bot.event
