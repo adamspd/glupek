@@ -8,8 +8,10 @@ services:
     env_file:
       - .env
     volumes:
+      # Database storage
+      - ./data:/app/data
       # Persist config across restarts
-      - ./config.json:/app/config.json
+      - ./config.json:/app/config.json:ro
       # Persist logs (CRITICAL for legal purposes)
       - ./logs:/app/logs
     logging:
