@@ -107,6 +107,9 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 translator = TranslatorCascade(DEEPL_API_KEY)
 
+# Store active challenges (message_id -> correct_lang)
+active_challenges = {}
+
 
 @bot.event
 async def on_ready():
@@ -134,31 +137,8 @@ async def on_message(message):
             logger.error(f"Failed to delete command message: {e}")
         return
 
+    # No auto-reactions - users add their own flags
     logger.info(f"New message from {message.author}: {message.content[:50]}...")
-
-    # Get server config
-    global_config = load_global_config()
-    server_config = db.get_server_config(str(message.guild.id), global_config)
-
-    enabled = server_config["enabled_languages"]
-    priority = global_config["priority_order"]
-    server_flags = server_config["custom_flags"]
-
-    # Sort by priority
-    sorted_langs = sorted(
-            enabled,
-            key=lambda x: priority.index(x) if x in priority else 999
-    )
-
-    langs_to_add = sorted_langs[:20]
-    logger.info(f"Adding {len(langs_to_add)} flag reactions")
-
-    for lang in langs_to_add:
-        try:
-            emoji = get_flag_emoji(lang, server_flags)
-            await message.add_reaction(emoji)
-        except Exception as e:
-            logger.error(f"Failed to add reaction for {lang}: {e}")
 
 
 @bot.event
@@ -215,12 +195,21 @@ async def handle_translation_request(reaction, user, message):
                 requested_lang = lang
                 break
 
-    # Check letter emojis
+    # If not found, try to decode ANY flag emoji to language code
     if not requested_lang:
-        for lang in server_config["enabled_languages"]:
-            if emoji_str == get_flag_emoji(lang, server_config["custom_flags"]):
-                requested_lang = lang
-                break
+        try:
+            chars = []
+            for char in emoji_str:
+                code = ord(char)
+                # Regional indicator range: U+1F1E6 to U+1F1FF (A-Z)
+                if 0x1F1E6 <= code <= 0x1F1FF:
+                    chars.append(chr(ord('a') + (code - 0x1F1E6)))
+
+            if len(chars) == 2:
+                requested_lang = ''.join(chars)
+                logger.info(f"Decoded flag emoji to language: {requested_lang}")
+        except Exception as e:
+            logger.error(f"Failed to decode flag emoji: {e}")
 
     if not requested_lang:
         logger.warning(f"Could not determine language for emoji {reaction.emoji}")
@@ -367,9 +356,6 @@ async def handle_challenge_response(reaction, user, message):
         except:
             pass
 
-
-# Removed on_reaction_add to prevent duplicate translations
-# Using only on_raw_reaction_add which handles both new and old messages
 
 def apply_dictionary(text: str, dictionary: dict) -> str:
     """Apply custom dictionary replacements"""
@@ -604,10 +590,6 @@ async def bulk_translate(ctx, count: int = 10):
     await ctx.send(f"✅ Added flags to {processed} messages.")
 
 
-# Store active challenges (message_id -> correct_lang)
-active_challenges = {}
-
-
 @glupek_group.command(name='challenge')
 async def start_challenge(ctx):
     """Start a translation guessing game"""
@@ -806,11 +788,17 @@ async def show_help(ctx):
     embed.add_field(
             name="❓ How It Works",
             value=(
-                "1. Bot adds flag reactions to messages\n"
-                "2. Click a flag for translation\n"
+                "1. Write a message in any language\n"
+                "2. React with ANY flag emoji to translate\n"
                 "3. Translation appears in thread\n"
-                "4. Click again to retry if failed"
+                "4. Works with any language, not just enabled ones!"
             ),
+            inline=False
+    )
+
+    embed.add_field(
+            name="💡 Note",
+            value="Server language list is for commands/bulk/challenge. You can translate to ANY language by adding its flag!",
             inline=False
     )
 
