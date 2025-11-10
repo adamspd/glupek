@@ -28,7 +28,7 @@ console_handler.setFormatter(formatter)
 
 file_handler = logging.handlers.RotatingFileHandler(
         filename=os.path.join(log_dir, 'glupek.log'),
-        maxBytes=10 * 1024 * 1024,
+        maxBytes=100 * 1024 * 1024,
         backupCount=50,
         encoding='utf-8'
 )
@@ -138,7 +138,7 @@ async def on_message(message):
         return
 
     # No auto-reactions - users add their own flags
-    logger.info(f"New message from {message.author}: {message.content[:50]}...")
+    logger.info(f"New message from {message.author} (ID: {message.author.id}) in {message.channel} (ID: {message.channel.id}): {message.content}")
 
 
 @bot.event
