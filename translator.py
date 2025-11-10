@@ -1,15 +1,11 @@
 # translator.py
 
-import requests
-import deepl
-from typing import Optional, Tuple
 import logging
+from typing import Optional, Tuple
 
-# Setup logging
-logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+import deepl
+import requests
+
 logger = logging.getLogger(__name__)
 
 

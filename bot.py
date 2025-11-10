@@ -1,12 +1,14 @@
 # bot.py
 
+import json
+import logging.handlers
+import os
+
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import json
-import os
+
 from translator import TranslatorCascade
-import logging.handlers
 
 load_dotenv(verbose=True)
 
@@ -14,30 +16,35 @@ load_dotenv(verbose=True)
 log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
 
-# Create handlers
-console_handler = logging.StreamHandler()
-file_handler = logging.handlers.RotatingFileHandler(
-    filename=os.path.join(log_dir, 'glupek.log'),
-    maxBytes=10 * 1024 * 1024,  # 10MB per file
-    backupCount=50,  # Keep 50 files = 500MB total
-    encoding='utf-8'
+# Create formatter
+formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# Format
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+# Console handler
+console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
+
+# File handler with rotation
+file_handler = logging.handlers.RotatingFileHandler(
+        filename=os.path.join(log_dir, 'glupek.log'),
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=50,
+        encoding='utf-8'
+)
 file_handler.setFormatter(formatter)
 
-# Setup root logger
-logging.basicConfig(
-    level=logging.INFO,
-    handlers=[console_handler, file_handler]
-)
+# Configure root logger
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.addHandler(console_handler)
+root_logger.addHandler(file_handler)
 
 logger = logging.getLogger(__name__)
+
+# Test that logging works
+logger.info("Głupek logging initialized")
 
 # Load config
 CONFIG_FILE = "config.json"
