@@ -1,0 +1,16 @@
+{
+  "enabled_languages": ["en", "es", "fr", "de", "ru", "pt"],
+  "flags": {
+    "en": "🇬🇧",
+    "es": "🇪🇸",
+    "fr": "🇫🇷",
+    "de": "🇩🇪",
+    "ru": "🇷🇺",
+    "pt": "🇵🇹"
+  },
+  "priority_order": [
+    "en", "es", "fr", "de", "ru", "pt", "it", "pl",
+    "ja", "ko", "zh", "ar", "hi", "nl", "sv", "no",
+    "da", "fi", "tr", "cs"
+  ]
+}

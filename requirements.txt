@@ -1,0 +1,4 @@
+discord.py>=2.0.0
+deepl>=1.15.0
+requests>=2.31.0
+python-dotenv>=1.2.1

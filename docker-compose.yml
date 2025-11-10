@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  glupek:
+    build: .
+    container_name: glupek
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persist config across restarts
+      - ./config.json:/app/config.json
+      # Persist logs (CRITICAL for legal purposes)
+      - ./logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
