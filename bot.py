@@ -368,6 +368,9 @@ async def handle_challenge_response(reaction, user, message):
             pass
 
 
+# Removed on_reaction_add to prevent duplicate translations
+# Using only on_raw_reaction_add which handles both new and old messages
+
 def apply_dictionary(text: str, dictionary: dict) -> str:
     """Apply custom dictionary replacements"""
     for term, replacement in dictionary.items():
