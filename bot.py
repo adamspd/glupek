@@ -304,7 +304,13 @@ async def handle_translation_request(reaction, user, message):
 
 async def handle_challenge_response(reaction, user, message):
     """Handle user response to translation challenge"""
-    correct_lang = active_challenges[str(message.id)]
+    message_id = str(message.id)
+
+    # Check if challenge still active (prevent double responses)
+    if message_id not in active_challenges:
+        return
+
+    correct_lang = active_challenges[message_id]
 
     # Determine which language was guessed
     global_config = load_global_config()
@@ -338,6 +344,9 @@ async def handle_challenge_response(reaction, user, message):
 
     # Check if correct
     if guessed_lang == correct_lang:
+        # Remove from active challenges IMMEDIATELY to prevent duplicate responses
+        del active_challenges[message_id]
+
         # Correct answer
         embed = discord.Embed(
                 title="✅ Correct!",
@@ -346,16 +355,13 @@ async def handle_challenge_response(reaction, user, message):
         )
         await message.reply(embed=embed)
 
-        # Remove from active challenges
-        del active_challenges[str(message.id)]
-
         # Clear all reactions
         try:
             await message.clear_reactions()
         except:
             pass
     else:
-        # Wrong answer - just remove their reaction
+        # Wrong answer - remove their reaction
         try:
             await reaction.remove(user)
         except:
