@@ -368,13 +368,6 @@ async def handle_challenge_response(reaction, user, message):
             pass
 
 
-@bot.event
-async def on_reaction_add(reaction, user):
-    if user.bot:
-        return
-    await handle_translation_request(reaction, user, reaction.message)
-
-
 def apply_dictionary(text: str, dictionary: dict) -> str:
     """Apply custom dictionary replacements"""
     for term, replacement in dictionary.items():
