@@ -125,7 +125,7 @@ async def on_message(message):
     ctx = await bot.get_context(message)
     if ctx.valid:
         await bot.invoke(ctx)
-        # Delete the command message to keep chats clean
+        # Delete command message to keep chat clean
         try:
             await message.delete()
         except discord.Forbidden:
@@ -188,6 +188,11 @@ async def on_raw_reaction_add(payload):
 
 async def handle_translation_request(reaction, user, message):
     logger.info(f"Reaction {reaction.emoji} added by {user.name}")
+
+    # Check if this is a challenge message
+    if str(message.id) in active_challenges:
+        await handle_challenge_response(reaction, user, message)
+        return
 
     # Get server config
     global_config = load_global_config()
@@ -295,6 +300,66 @@ async def handle_translation_request(reaction, user, message):
             await thread.send(f"{reaction.emoji}: {service}")
         except Exception as e:
             logger.error(f"Failed to send error message: {e}")
+
+
+async def handle_challenge_response(reaction, user, message):
+    """Handle user response to translation challenge"""
+    correct_lang = active_challenges[str(message.id)]
+
+    # Determine which language was guessed
+    global_config = load_global_config()
+    server_config = db.get_server_config(str(message.guild.id), global_config)
+
+    guessed_lang = None
+    emoji_str = str(reaction.emoji)
+
+    # Check custom flags
+    for lang, flag in server_config["custom_flags"].items():
+        if emoji_str == flag:
+            guessed_lang = lang
+            break
+
+    # Check global flags
+    if not guessed_lang:
+        for lang, flag in global_config["default_flags"].items():
+            if emoji_str == flag:
+                guessed_lang = lang
+                break
+
+    # Check letter emojis
+    if not guessed_lang:
+        for lang in server_config["enabled_languages"]:
+            if emoji_str == get_flag_emoji(lang, server_config["custom_flags"]):
+                guessed_lang = lang
+                break
+
+    if not guessed_lang:
+        return
+
+    # Check if correct
+    if guessed_lang == correct_lang:
+        # Correct answer
+        embed = discord.Embed(
+                title="✅ Correct!",
+                description=f"{user.mention} got it right! The language was **{correct_lang.upper()}**.",
+                color=0x57F287
+        )
+        await message.reply(embed=embed)
+
+        # Remove from active challenges
+        del active_challenges[str(message.id)]
+
+        # Clear all reactions
+        try:
+            await message.clear_reactions()
+        except:
+            pass
+    else:
+        # Wrong answer - just remove their reaction
+        try:
+            await reaction.remove(user)
+        except:
+            pass
 
 
 @bot.event
@@ -537,19 +602,79 @@ async def bulk_translate(ctx, count: int = 10):
     await ctx.send(f"✅ Added flags to {processed} messages.")
 
 
+# Store active challenges (message_id -> correct_lang)
+active_challenges = {}
+
+
 @glupek_group.command(name='challenge')
 async def start_challenge(ctx):
     """Start a translation guessing game"""
-    phrases = [
-        ("Hello, how are you?", "en"),
-        ("Bonjour, comment allez-vous?", "fr"),
-        ("Hola, ¿cómo estás?", "es"),
-        ("Guten Tag, wie geht es Ihnen?", "de"),
-        ("Привет, как дела?", "ru"),
-        ("你好吗？", "zh")
-    ]
+    # Multiple phrases per language to avoid memorization
+    phrases = {
+        "en": [
+            "Hello, how are you?",
+            "What a beautiful day!",
+            "I love programming.",
+            "Where is the library?",
+            "Thank you very much!"
+        ],
+        "fr": [
+            "Bonjour, comment allez-vous?",
+            "Quelle belle journée!",
+            "J'adore la programmation.",
+            "Où est la bibliothèque?",
+            "Merci beaucoup!"
+        ],
+        "es": [
+            "Hola, ¿cómo estás?",
+            "¡Qué día tan hermoso!",
+            "Me encanta programar.",
+            "¿Dónde está la biblioteca?",
+            "¡Muchas gracias!"
+        ],
+        "de": [
+            "Guten Tag, wie geht es Ihnen?",
+            "Was für ein schöner Tag!",
+            "Ich liebe das Programmieren.",
+            "Wo ist die Bibliothek?",
+            "Vielen Dank!"
+        ],
+        "ru": [
+            "Привет, как дела?",
+            "Какой прекрасный день!",
+            "Я люблю программирование.",
+            "Где находится библиотека?",
+            "Большое спасибо!"
+        ],
+        "pt": [
+            "Olá, como você está?",
+            "Que dia lindo!",
+            "Eu amo programar.",
+            "Onde fica a biblioteca?",
+            "Muito obrigado!"
+        ],
+        "zh": [
+            "你好吗？",
+            "多么美好的一天！",
+            "我喜欢编程。",
+            "图书馆在哪里？",
+            "非常感谢！"
+        ]
+    }
 
-    phrase, correct_lang = random.choice(phrases)
+    # Pick random language and random phrase
+    global_config = load_global_config()
+    server_config = db.get_server_config(str(ctx.guild.id), global_config)
+
+    # Only use languages that are enabled on this server
+    available_langs = [lang for lang in phrases.keys() if lang in server_config["enabled_languages"]]
+
+    if not available_langs:
+        await ctx.send("❌ No languages available for challenge. Enable some languages first!")
+        return
+
+    correct_lang = random.choice(available_langs)
+    phrase = random.choice(phrases[correct_lang])
 
     embed = discord.Embed(
             title="🎮 Translation Challenge",
@@ -560,13 +685,16 @@ async def start_challenge(ctx):
 
     msg = await ctx.send(embed=embed)
 
-    # Add flag reactions
-    global_config = load_global_config()
-    server_config = db.get_server_config(str(ctx.guild.id), global_config)
+    # Store challenge info
+    active_challenges[str(msg.id)] = correct_lang
 
-    for lang in ["en", "fr", "es", "de", "ru", "zh"]:
+    # Add flag reactions
+    for lang in server_config["enabled_languages"]:
         emoji = get_flag_emoji(lang, server_config["custom_flags"])
-        await msg.add_reaction(emoji)
+        try:
+            await msg.add_reaction(emoji)
+        except Exception as e:
+            logger.error(f"Failed to add challenge reaction for {lang}: {e}")
 
 
 @glupek_group.group(name='dict')
