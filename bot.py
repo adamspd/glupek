@@ -125,6 +125,13 @@ async def on_message(message):
     ctx = await bot.get_context(message)
     if ctx.valid:
         await bot.invoke(ctx)
+        # Delete the command message to keep chats clean
+        try:
+            await message.delete()
+        except discord.Forbidden:
+            logger.warning(f"Cannot delete command message - missing permissions")
+        except Exception as e:
+            logger.error(f"Failed to delete command message: {e}")
         return
 
     logger.info(f"New message from {message.author}: {message.content[:50]}...")
