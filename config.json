@@ -1,16 +1,14 @@
 {
-  "enabled_languages": ["en", "es", "fr", "de", "ru", "pt"],
-  "flags": {
+  "default_languages": ["en", "es", "fr", "de", "ru", "pt", "zh"],
+  "default_flags": {
     "en": "🇬🇧",
     "es": "🇪🇸",
     "fr": "🇫🇷",
     "de": "🇩🇪",
     "ru": "🇷🇺",
-    "pt": "🇵🇹"
+    "pt": "🇵🇹",
+    "zh": "🇨🇳"
   },
-  "priority_order": [
-    "en", "es", "fr", "de", "ru", "pt", "it", "pl",
-    "ja", "ko", "zh", "ar", "hi", "nl", "sv", "no",
-    "da", "fi", "tr", "cs"
-  ]
+  "priority_order": ["en", "es", "fr", "de", "ru", "pt", "zh", "it", "pl", "ja", "ko", "ar", "hi", "nl", "sv", "no", "da", "fi", "tr", "cs"],
+  "default_mode": "thread"
 }
