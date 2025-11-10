@@ -50,15 +50,15 @@ def load_global_config():
     """Load global defaults from config.json"""
     if not os.path.exists(CONFIG_FILE):
         default_config = {
-            "default_languages": ["en", "es", "fr", "de", "ru", "pt", "zh"],
+            "default_languages": ["en", "es", "fr", "de", "ru", "pt", "zh", "ja"],
             "default_flags": {
                 "en": "🇬🇧", "es": "🇪🇸", "fr": "🇫🇷",
                 "de": "🇩🇪", "ru": "🇷🇺", "pt": "🇵🇹",
-                "zh": "🇨🇳"
+                "zh": "🇨🇳", "ja": "🇯🇵"
             },
             "priority_order": [
-                "en", "es", "fr", "de", "ru", "pt", "zh", "it", "pl",
-                "ja", "ko", "ar", "hi", "nl", "sv", "no",
+                "en", "es", "fr", "de", "ru", "pt", "zh", "ja", "it", "pl",
+                "ko", "ar", "hi", "nl", "sv", "no",
                 "da", "fi", "tr", "cs"
             ],
             "default_mode": "thread"
@@ -643,6 +643,13 @@ async def start_challenge(ctx):
             "我喜欢编程。",
             "图书馆在哪里？",
             "非常感谢！"
+        ],
+        "ja": [
+            "こんにちは、お元気ですか？",
+            "なんて美しい日だ！",
+            "プログラミングが大好きです。",
+            "図書館はどこですか？",
+            "ありがとうございます！"
         ]
     }
 
